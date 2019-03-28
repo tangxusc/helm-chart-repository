@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetReportCaller(true)
 	logrus.SetFormatter(&logrus.TextFormatter{})
 	//加载配置

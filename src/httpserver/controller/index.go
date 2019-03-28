@@ -15,7 +15,9 @@ func init() {
 }
 
 func indexHandler(ctx context.Context) {
-	err := ctx.SendFile(config.Config.DataDir+"index.yaml", "chart index")
+	logrus.Debugf("DataDir is :%s", config.Config.DataDir)
+	filename := "index.yaml"
+	err := ctx.SendFile(config.Config.DataDir+filename, filename)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
