@@ -16,14 +16,13 @@ var Registers = make([]Register, 0)
 func Start() {
 	err := HttpServer.Run(iris.Addr(fmt.Sprintf(":%s", config.Config.ServerPort)))
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Fatalf("start server error,%s", err.Error())
 	}
 }
 
 func InitServer() {
 	HttpServer = iris.Default()
 	HttpServer.Configure(iris.WithTimeFormat("2006-01-02 15:04:05"))
-	fmt.Println(len(Registers))
 	for _, value := range Registers {
 		value(HttpServer)
 	}

@@ -3,11 +3,11 @@ package event
 var eventChannels []chan interface{}
 
 func Send(event interface{}) {
-	go func() {
-		for _, value := range eventChannels {
-			value <- &event
-		}
-	}()
+	for _, value := range eventChannels {
+		go func() {
+			value <- event
+		}()
+	}
 }
 
 func RegisterChannel(channel chan interface{}) {

@@ -6,6 +6,7 @@ import (
 	"repository/httpserver"
 	_ "repository/httpserver/controller"
 	"repository/httpserver/metrics"
+	"repository/repository"
 )
 
 func main() {
@@ -14,9 +15,12 @@ func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{})
 	//加载配置
 	config.LoadConfig()
+	//注册http server
 	httpserver.InitServer()
+	//初始化index.yaml
+	repository.InitIndexFile()
+	//监听metrics
 	go metrics.Listen()
-	//扫描存储库
 	//启动http服务器
 	httpserver.Start()
 }
