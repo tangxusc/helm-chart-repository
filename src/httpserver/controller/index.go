@@ -14,6 +14,9 @@ func init() {
 	})
 }
 
+/**
+TODO:直接发送文件还是序列化repository缓存的IndexFile好一些呢?
+*/
 func indexHandler(ctx context.Context) {
 	logrus.Debugf("DataDir is :%s", config.Config.DataDir)
 	filename := "index.yaml"

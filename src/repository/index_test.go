@@ -8,7 +8,7 @@ import (
 
 func TestAll(t *testing.T) {
 	config.Config.DataDir = "../testdata/data/"
-	indexFile, e := AllIndexFile()
+	indexFile, e := LoadIndexFile()
 	if e != nil {
 		panic(e)
 	}
