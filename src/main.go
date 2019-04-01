@@ -3,10 +3,11 @@ package main
 import (
 	"github.com/sirupsen/logrus"
 	"repository/config"
+	"repository/event"
 	"repository/httpserver"
 	_ "repository/httpserver/controller"
-	"repository/httpserver/metrics"
-	"repository/repository/entry"
+	_ "repository/httpserver/metrics"
+	_ "repository/repository/entry"
 	"repository/repository/index"
 )
 
@@ -20,10 +21,7 @@ func main() {
 	httpserver.InitServer()
 	//初始化index.yaml
 	index.InitIndexFile()
-	go index.Listen()
-	go entry.Listen()
-	//监听metrics
-	go metrics.Listen()
+	go event.Listen()
 	//启动http服务器
 	httpserver.Start()
 }

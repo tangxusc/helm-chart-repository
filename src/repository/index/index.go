@@ -15,42 +15,18 @@ import (
 )
 
 var indexFile *domain.IndexFile
-var indexEventChan = make(chan interface{}, 1000)
 
 func init() {
-	event.RegisterChannel(indexEventChan)
-}
-
-func Listen() {
-	ok := true
-	var evt interface{}
-	for {
-		select {
-		case evt, ok = <-indexEventChan:
-			logrus.WithFields(logrus.Fields{
-				"event": evt,
-				"ok":    ok,
-			}).Debug("index handler Event")
-		}
-		if !ok {
-			break
-		}
-		handlerIndexEvent(evt)
-	}
-}
-
-func handlerIndexEvent(event interface{}) {
-	switch event.(type) {
-	case *controller.ChartCreated:
-		created := event.(*controller.ChartCreated)
-		handlerChartCreated(created)
-	}
+	event.Subscribe(100, event.Handlers{
+		"*controller.ChartCreated": handlerChartCreated,
+	})
 }
 
 /**
 处理 chart创建事件
 */
-func handlerChartCreated(created *controller.ChartCreated) {
+func handlerChartCreated(event interface{}) {
+	created := event.(*controller.ChartCreated)
 	indexFile.Generated = time.Now()
 	//TODO:加上下载前缀
 	created.URLs = []string{created.FileName}

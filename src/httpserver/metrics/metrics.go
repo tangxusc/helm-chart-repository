@@ -11,7 +11,6 @@ import (
 	"repository/repository/index"
 )
 
-var eventChan = make(chan interface{}, 1000)
 var chartGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 	Name: "chart",
 	Help: "chart 数量",
@@ -27,32 +26,14 @@ func init() {
 		app.Any("/metrics", iris.FromStd(promhttp.Handler()))
 	})
 	prometheus.MustRegister(chartGauge)
-	event.RegisterChannel(eventChan)
-}
 
-func Listen() {
-	ok := true
-	var evt interface{}
-	for {
-		select {
-		case evt, ok = <-eventChan:
-			logrus.WithFields(logrus.Fields{
-				"event": evt,
-				"ok":    ok,
-			}).Debug("handler Event")
-		}
-		if !ok {
-			break
-		}
-		handlerEvent(evt)
-	}
+	event.Subscribe(100, event.Handlers{
+		"*index.ChartUpdated": handlerEvent,
+	})
 }
 
 func handlerEvent(event interface{}) {
-	switch event.(type) {
-	case *index.ChartUpdated:
-		updated := event.(*index.ChartUpdated)
-		logrus.WithField("chart count", updated).Debug()
-		chartGauge.Set(float64(updated.ChartTotal))
-	}
+	updated := event.(*index.ChartUpdated)
+	logrus.WithField("chart count", updated).Debug()
+	chartGauge.Set(float64(updated.ChartTotal))
 }

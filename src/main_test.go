@@ -6,7 +6,6 @@ import (
 	"repository/event"
 	"repository/httpserver/controller"
 	"repository/repository/domain"
-	"repository/repository/entry"
 	"repository/repository/index"
 	"testing"
 	"time"
@@ -20,8 +19,7 @@ func TestSend(t *testing.T) {
 	//加载配置
 	config.LoadConfig()
 	index.InitIndexFile()
-	go index.Listen()
-	go entry.Listen()
+	go event.Listen()
 
 	chart := &domain.ChartVersion{}
 	chart.Name = "test"

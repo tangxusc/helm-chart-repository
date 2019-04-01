@@ -13,43 +13,16 @@ import (
 	"repository/repository/domain"
 )
 
-var entryEventChannel = make(chan interface{}, 1000)
-var EntryFileName = "entry.yaml"
-
 func init() {
-	event.RegisterChannel(entryEventChannel)
+	event.Subscribe(100, event.Handlers{
+		"*controller.ChartCreated": handlerChartCreated,
+		"*controller.FileUploaded": handlerFileUploaded,
+	})
 }
 
-func Listen() {
-	ok := true
-	var evt interface{}
-	for {
-		select {
-		case evt, ok = <-entryEventChannel:
-			logrus.WithFields(logrus.Fields{
-				"event": evt,
-				"ok":    ok,
-			}).Debug("entry handler Event")
-		}
-		if !ok {
-			break
-		}
-		handlerEntryEvent(evt)
-	}
-}
+func handlerChartCreated(event interface{}) {
+	created := event.(*controller.ChartCreated)
 
-func handlerEntryEvent(event interface{}) {
-	switch event.(type) {
-	case *controller.ChartCreated:
-		created := event.(*controller.ChartCreated)
-		handlerChartCreated(created)
-	case *controller.FileUploaded:
-		upload := event.(*controller.FileUploaded)
-		handlerFileUploaded(upload)
-	}
-}
-
-func handlerChartCreated(created *controller.ChartCreated) {
 	path := getEntryFilePath(created.Name)
 	versions, err := LoadChartVersionsByFile(path)
 	if err != nil {
@@ -80,10 +53,11 @@ func handlerChartCreated(created *controller.ChartCreated) {
 }
 
 func getEntryFilePath(entryName string) string {
-	return filepath.Join(config.Config.DataDir, entryName, EntryFileName)
+	return filepath.Join(config.Config.DataDir, entryName, config.Config.EntryFileName)
 }
 
-func handlerFileUploaded(uploaded *controller.FileUploaded) {
+func handlerFileUploaded(event interface{}) {
+	uploaded := event.(*controller.FileUploaded)
 	err := checkDirExist(uploaded.ChartName)
 	if err != nil {
 		panic(err)

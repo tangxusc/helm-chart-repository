@@ -3,6 +3,7 @@ package index
 import (
 	"fmt"
 	"repository/config"
+	"repository/repository/entry"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestInitIndexFile(t *testing.T) {
 }
 
 func TestLoadChartVersionsByFile(t *testing.T) {
-	versions, e := loadChartVersionsByFile("../testdata/data/apache/entry.yaml")
+	versions, e := entry.LoadChartVersionsByFile("../testdata/data/apache/entry.yaml")
 	if e != nil {
 		panic(e)
 	}
