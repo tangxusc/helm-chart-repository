@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"repository/event"
 	"repository/httpserver"
-	"repository/repository/index"
+	"repository/repository/domain"
 )
 
 var chartGauge = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -28,12 +28,12 @@ func init() {
 	prometheus.MustRegister(chartGauge)
 
 	event.Subscribe(100, event.Handlers{
-		"*index.ChartUpdated": handlerEvent,
-	})
+		"*domain.ChartUpdated": handlerEvent,
+	}, "metrics")
 }
 
 func handlerEvent(event interface{}) {
-	updated := event.(*index.ChartUpdated)
+	updated := event.(*domain.ChartUpdated)
 	logrus.WithField("chart count", updated).Debug()
 	chartGauge.Set(float64(updated.ChartTotal))
 }

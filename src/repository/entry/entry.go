@@ -9,44 +9,56 @@ import (
 	"path/filepath"
 	"repository/config"
 	"repository/event"
-	"repository/httpserver/controller"
 	"repository/repository/domain"
 )
 
 func init() {
 	event.Subscribe(100, event.Handlers{
-		"*controller.ChartCreated": handlerChartCreated,
-		"*controller.FileUploaded": handlerFileUploaded,
-	})
+		"*domain.ChartCreated": handlerChartCreated,
+		"*domain.FileUploaded": handlerFileUploaded,
+		"*domain.ChartDeleted": handlerChartDeleted,
+	}, "chartEntry")
+}
+
+func handlerChartDeleted(event interface{}) {
+	deleted := event.(*domain.ChartDeleted)
+	path := getEntryFilePath(deleted.ChartName)
+	versions := MustLoadChartVersionsByFile(path)
+	for key, value := range versions {
+		if value.Name == deleted.ChartName && value.Version == deleted.Version {
+			versions = append(versions[:key], versions[key+1:]...)
+			break
+		}
+	}
+	writeYaml(versions, deleted.ChartName, path)
 }
 
 func handlerChartCreated(event interface{}) {
-	created := event.(*controller.ChartCreated)
+	created := event.(*domain.ChartCreated)
 
 	path := getEntryFilePath(created.Name)
-	versions, err := LoadChartVersionsByFile(path)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"ChartName": created.Name,
-		}).Errorf("unMarshal entry instance error, %s", err.Error())
-		panic(err)
-	}
+	versions := MustLoadChartVersionsByFile(path)
+
 	versions = append(versions, created.ChartVersion)
+	writeYaml(versions, created.Name, path)
+}
+
+func writeYaml(versions []*domain.ChartVersion, chartName string, path string) {
 	out, err := yaml.Marshal(versions)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"ChartName": created.Name,
+			"ChartName": chartName,
 		}).Errorf("marshal entry instance error, %s", err.Error())
 		panic(err)
 	}
-	err = checkDirExist(created.Name)
+	err = checkDirExist(chartName)
 	if err != nil {
 		panic(err)
 	}
 	err = ioutil.WriteFile(path, out, os.ModePerm)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"ChartName": created.Name,
+			"ChartName": chartName,
 		}).Errorf("write entry instance error, %s", err.Error())
 		panic(err)
 	}
@@ -57,7 +69,7 @@ func getEntryFilePath(entryName string) string {
 }
 
 func handlerFileUploaded(event interface{}) {
-	uploaded := event.(*controller.FileUploaded)
+	uploaded := event.(*domain.FileUploaded)
 	err := checkDirExist(uploaded.ChartName)
 	if err != nil {
 		panic(err)
@@ -116,4 +128,33 @@ func LoadChartVersionsByFile(filepath string) ([]*domain.ChartVersion, error) {
 		return versions, e
 	}
 	return versions, nil
+}
+
+func MustLoadChartVersionsByFile(filepath string) []*domain.ChartVersion {
+	versions := make([]*domain.ChartVersion, 0)
+	file, e := os.Open(filepath)
+	if e != nil && os.IsNotExist(e) {
+		return versions
+	}
+	if e != nil {
+		logrus.WithFields(logrus.Fields{
+			"ChartPath": filepath,
+		}).Errorf("open entry instance error, %s", e.Error())
+		panic(e)
+	}
+	bytes, e := ioutil.ReadAll(file)
+	if e != nil {
+		logrus.WithFields(logrus.Fields{
+			"ChartPath": filepath,
+		}).Errorf("read entry instance error, %s", e.Error())
+		panic(e)
+	}
+	e = yaml.Unmarshal(bytes, &versions)
+	if e != nil {
+		logrus.WithFields(logrus.Fields{
+			"ChartPath": filepath,
+		}).Errorf("unMarshal entry instance error, %s", e.Error())
+		panic(e)
+	}
+	return versions
 }

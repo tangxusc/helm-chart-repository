@@ -4,7 +4,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"repository/config"
 	"repository/event"
-	"repository/httpserver/controller"
 	"repository/repository/domain"
 	"repository/repository/index"
 	"testing"
@@ -13,7 +12,7 @@ import (
 
 func TestSend(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetReportCaller(true)
+	//logrus.SetReportCaller(true)
 	logrus.SetFormatter(&logrus.TextFormatter{})
 
 	//加载配置
@@ -24,14 +23,14 @@ func TestSend(t *testing.T) {
 	chart := &domain.ChartVersion{}
 	chart.Name = "test"
 	chart.Version = "0.1"
-	event.Send(&controller.ChartCreated{
+	event.Send(&domain.ChartCreated{
 		ChartVersion: chart,
 		FileName:     "test.tar.gz",
 	})
 	chart2 := &domain.ChartVersion{}
 	chart2.Name = "test"
 	chart2.Version = "0.2"
-	event.Send(&controller.ChartCreated{
+	event.Send(&domain.ChartCreated{
 		ChartVersion: chart2,
 		FileName:     "test.tar.gz",
 	})

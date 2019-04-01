@@ -4,7 +4,6 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/context"
 	"github.com/sirupsen/logrus"
-	"mime/multipart"
 	"path/filepath"
 	"repository/event"
 	"repository/httpserver"
@@ -16,6 +15,17 @@ import (
 func init() {
 	httpserver.AddRegister(func(app *iris.Application) {
 		app.Post("/chart", createHandler)
+		app.Delete("/chart/{chartName:string}/{version:string}", deleteHandler)
+	})
+}
+
+func deleteHandler(ctx context.Context) {
+	chartName := ctx.Params().Get("chartName")
+	version := ctx.Params().Get("version")
+
+	event.Send(&domain.ChartDeleted{
+		ChartName: chartName,
+		Version:   version,
 	})
 }
 
@@ -32,26 +42,14 @@ func createHandler(ctx context.Context) {
 		panic(err)
 	}
 	filename := strconv.Itoa(time.Now().Nanosecond()) + filepath.Ext(header.Filename)
-	event.Send(&FileUploaded{
+	event.Send(&domain.FileUploaded{
 		File:        &file,
 		ChartName:   chart.Name,
 		FileName:    header.Filename,
 		NewFileName: filename,
 	})
-	event.Send(&ChartCreated{
+	event.Send(&domain.ChartCreated{
 		ChartVersion: chart,
 		FileName:     filename,
 	})
-}
-
-type FileUploaded struct {
-	File        *multipart.File
-	ChartName   string
-	FileName    string
-	NewFileName string
-}
-
-type ChartCreated struct {
-	*domain.ChartVersion
-	FileName string
 }

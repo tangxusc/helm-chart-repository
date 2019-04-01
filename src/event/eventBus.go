@@ -20,15 +20,17 @@ func Send(event interface{}) {
 
 type Handlers map[string]func(interface{})
 
-func Subscribe(cacheSize int, handlers Handlers) {
+func Subscribe(cacheSize int, handlers Handlers, name string) {
 	i := make(chan interface{}, cacheSize)
 	subscribers = append(subscribers, &subscriber{
 		channel:  i,
 		handlers: handlers,
+		name:     name,
 	})
 }
 
 type subscriber struct {
+	name     string
 	channel  chan interface{}
 	handlers Handlers
 }
@@ -44,12 +46,16 @@ func Listen() {
 					logrus.WithFields(logrus.Fields{
 						"event": evt,
 						"ok":    ok,
-					}).Debug("index handler Event")
+					}).Debug("接收到事件")
 				}
 				if !ok {
 					break
 				}
 				handler, ok := subscriber.handlers[getEventKey(evt)]
+				logrus.WithFields(logrus.Fields{
+					"ok":   ok,
+					"name": subscriber.name,
+				}).Debug("事件处理")
 				if ok {
 					handler(evt)
 				}

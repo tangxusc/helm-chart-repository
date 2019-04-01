@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"repository/config"
 	"repository/event"
-	"repository/httpserver/controller"
 	"repository/repository/domain"
 	"repository/repository/entry"
 	"time"
@@ -18,7 +17,31 @@ var indexFile *domain.IndexFile
 
 func init() {
 	event.Subscribe(100, event.Handlers{
-		"*controller.ChartCreated": handlerChartCreated,
+		"*domain.ChartCreated": handlerChartCreated,
+		"*domain.ChartDeleted": handlerChartDeleted,
+	}, "index")
+}
+
+func handlerChartDeleted(evt interface{}) {
+	deleted := evt.(*domain.ChartDeleted)
+
+	versions := indexFile.Entries[deleted.ChartName]
+	for key, value := range versions {
+		if value.Name == deleted.ChartName && value.Version == deleted.Version {
+			versions = append(versions[:key], versions[key+1:]...)
+			break
+		}
+	}
+	indexFile.Entries[deleted.ChartName] = versions
+	if len(versions) == 0 {
+		delete(indexFile.Entries, deleted.ChartName)
+	}
+	err := WriteIndexFile()
+	if err != nil {
+		logrus.Fatalf("write index.yaml error,%s", err.Error())
+	}
+	event.Send(&domain.ChartUpdated{
+		ChartTotal: len(indexFile.Entries),
 	})
 }
 
@@ -26,7 +49,7 @@ func init() {
 处理 chart创建事件
 */
 func handlerChartCreated(event interface{}) {
-	created := event.(*controller.ChartCreated)
+	created := event.(*domain.ChartCreated)
 	indexFile.Generated = time.Now()
 	//TODO:加上下载前缀
 	created.URLs = []string{created.FileName}
@@ -60,13 +83,9 @@ func InitIndexFile() {
 	if err != nil {
 		logrus.Fatalf("write index.yaml error,%s", err.Error())
 	}
-	event.Send(&ChartUpdated{
+	event.Send(&domain.ChartUpdated{
 		ChartTotal: len(indexFile.Entries),
 	})
-}
-
-type ChartUpdated struct {
-	ChartTotal int
 }
 
 func WriteIndexFile() error {
