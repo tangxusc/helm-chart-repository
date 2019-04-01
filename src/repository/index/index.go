@@ -1,9 +1,8 @@
-package repository
+package index
 
 import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,84 +10,41 @@ import (
 	"repository/event"
 	"repository/httpserver/controller"
 	"repository/repository/domain"
+	"repository/repository/entry"
 	"time"
 )
 
 var indexFile *domain.IndexFile
-var eventChan = make(chan interface{}, 1000)
+var indexEventChan = make(chan interface{}, 1000)
 
 func init() {
-	event.RegisterChannel(eventChan)
+	event.RegisterChannel(indexEventChan)
 }
 
 func Listen() {
+	ok := true
+	var evt interface{}
 	for {
-		ok := true
-		var evt interface{}
 		select {
-		case evt, ok = <-eventChan:
+		case evt, ok = <-indexEventChan:
 			logrus.WithFields(logrus.Fields{
 				"event": evt,
 				"ok":    ok,
-			}).Debug("handler Event")
+			}).Debug("index handler Event")
 		}
 		if !ok {
 			break
 		}
-		handlerEvent(evt)
+		handlerIndexEvent(evt)
 	}
 }
 
-func handlerEvent(event interface{}) {
+func handlerIndexEvent(event interface{}) {
 	switch event.(type) {
 	case *controller.ChartCreated:
 		created := event.(*controller.ChartCreated)
 		handlerChartCreated(created)
-	case *controller.FileUploaded:
-		upload := event.(*controller.FileUploaded)
-		handlerFileUploaded(upload)
 	}
-}
-
-func handlerFileUploaded(uploaded *controller.FileUploaded) {
-	err := checkDirExist(uploaded)
-	if err != nil {
-		panic(err)
-	}
-	join := filepath.Join(config.Config.DataDir, uploaded.ChartName, uploaded.NewFileName)
-	file, err := os.Open(join)
-	if err != nil {
-		logrus.Errorf("openfile dir %s not is dir, %s", join, err.Error())
-		panic(err)
-	}
-	_, err = io.Copy(file, *uploaded.File)
-	if err != nil {
-		logrus.Errorf("chart dir %s not is dir, %s", join, err.Error())
-		panic(err)
-	}
-}
-
-func checkDirExist(uploaded *controller.FileUploaded) error {
-	join := filepath.Join(config.Config.DataDir, uploaded.ChartName)
-	fileInfo, err := os.Stat(join)
-	//检查文件夹是否存在
-	if err != nil && os.IsNotExist(err) {
-		err := os.Mkdir(join, os.ModePerm)
-		if err != nil {
-			logrus.Errorf("create chart dir %s error, %s", join, err.Error())
-		}
-		err = nil
-	}
-	if err != nil {
-		logrus.Errorf("open chart dir %s error, %s", join, err.Error())
-		return err
-	}
-	//检查是否为文件夹
-	if !fileInfo.IsDir() {
-		logrus.Errorf("chart dir %s not is dir, %s", join, err.Error())
-		return err
-	}
-	return err
 }
 
 /**
@@ -101,9 +57,10 @@ func handlerChartCreated(created *controller.ChartCreated) {
 
 	versions, ok := indexFile.Entries[created.Name]
 	if !ok {
-		versions = make([]*domain.ChartVersion, 1)
+		versions = make([]*domain.ChartVersion, 0)
 	}
 	versions = append(versions, created.ChartVersion)
+	indexFile.Entries[created.Name] = versions
 	err := WriteIndexFile()
 	if err != nil {
 		logrus.Errorf("handler ChartCreated event error,%s", err.Error())
@@ -155,7 +112,7 @@ func getIndexFilePath() string {
 }
 
 func LoadIndexFile() (*domain.IndexFile, error) {
-	matches, e := filepath.Glob(filepath.Join(config.Config.DataDir, "**/entry.yaml"))
+	matches, e := filepath.Glob(filepath.Join(config.Config.DataDir, "**/"+config.Config.EntryFileName))
 	if e != nil {
 		logrus.Error(e.Error())
 		return nil, e
@@ -166,7 +123,7 @@ func LoadIndexFile() (*domain.IndexFile, error) {
 		Entries:    make(map[string]domain.ChartVersions),
 	}
 	for _, value := range matches {
-		charts, e := loadChartVersionsByFile(value)
+		charts, e := entry.LoadChartVersionsByFile(value)
 		if e != nil {
 			logrus.Error(e.Error())
 			continue
@@ -177,21 +134,4 @@ func LoadIndexFile() (*domain.IndexFile, error) {
 	}
 
 	return result, nil
-}
-
-func loadChartVersionsByFile(filepath string) ([]*domain.ChartVersion, error) {
-	versions := make([]*domain.ChartVersion, 0)
-	file, e := os.Open(filepath)
-	if e != nil {
-		return nil, e
-	}
-	bytes, e := ioutil.ReadAll(file)
-	if e != nil {
-		return nil, e
-	}
-	e = yaml.Unmarshal(bytes, &versions)
-	if e != nil {
-		return nil, e
-	}
-	return versions, nil
 }

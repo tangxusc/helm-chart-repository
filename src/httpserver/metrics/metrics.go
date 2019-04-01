@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"repository/event"
 	"repository/httpserver"
-	"repository/repository"
+	"repository/repository/index"
 )
 
 var eventChan = make(chan interface{}, 1000)
@@ -31,9 +31,9 @@ func init() {
 }
 
 func Listen() {
+	ok := true
+	var evt interface{}
 	for {
-		ok := true
-		var evt interface{}
 		select {
 		case evt, ok = <-eventChan:
 			logrus.WithFields(logrus.Fields{
@@ -50,8 +50,8 @@ func Listen() {
 
 func handlerEvent(event interface{}) {
 	switch event.(type) {
-	case *repository.ChartUpdated:
-		updated := event.(*repository.ChartUpdated)
+	case *index.ChartUpdated:
+		updated := event.(*index.ChartUpdated)
 		logrus.WithField("chart count", updated).Debug()
 		chartGauge.Set(float64(updated.ChartTotal))
 	}

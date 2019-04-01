@@ -6,7 +6,8 @@ import (
 	"repository/httpserver"
 	_ "repository/httpserver/controller"
 	"repository/httpserver/metrics"
-	"repository/repository"
+	"repository/repository/entry"
+	"repository/repository/index"
 )
 
 func main() {
@@ -18,7 +19,9 @@ func main() {
 	//注册http server
 	httpserver.InitServer()
 	//初始化index.yaml
-	repository.InitIndexFile()
+	index.InitIndexFile()
+	go index.Listen()
+	go entry.Listen()
 	//监听metrics
 	go metrics.Listen()
 	//启动http服务器

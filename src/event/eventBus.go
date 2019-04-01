@@ -4,9 +4,9 @@ var eventChannels []chan interface{}
 
 func Send(event interface{}) {
 	for _, value := range eventChannels {
-		go func() {
-			value <- event
-		}()
+		go func(channel chan interface{}) {
+			channel <- event
+		}(value)
 	}
 }
 

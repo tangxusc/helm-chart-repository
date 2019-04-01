@@ -16,13 +16,15 @@ var loader = confita.NewLoader(flags.NewBackend(),
 )
 
 var Config = Configuration{
-	ServerPort: "8080",
-	DataDir:    "data/",
+	ServerPort:    "8080",
+	DataDir:       "data/",
+	EntryFileName: "entry.yaml",
 }
 
 type Configuration struct {
-	ServerPort string `config:"serverPort"`
-	DataDir    string `config:"dataDir"`
+	ServerPort    string `config:"serverPort"`
+	DataDir       string `config:"dataDir"`
+	EntryFileName string `config:"entryFileName"`
 }
 
 func LoadConfig() {
