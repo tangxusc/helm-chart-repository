@@ -57,11 +57,21 @@ func Listen() {
 					"name": subscriber.name,
 				}).Debug("事件处理")
 				if ok {
-					handler(evt)
+					call(handler, evt)
 				}
 			}
 		}(value)
 	}
+}
+
+func call(handler func(interface{}), evt interface{}) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			logrus.Errorf("发生错误,详情:%s", err)
+		}
+	}()
+	handler(evt)
 }
 
 func getEventKey(evt interface{}) string {
