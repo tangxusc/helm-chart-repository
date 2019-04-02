@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"repository/config"
+	"repository/domain"
 	"repository/event"
-	"repository/repository/domain"
 )
 
 func init() {
@@ -75,7 +75,8 @@ func handlerFileUploaded(event interface{}) {
 		panic(err)
 	}
 	join := filepath.Join(config.Config.DataDir, uploaded.ChartName, uploaded.NewFileName)
-	file, err := os.Open(join)
+	file, err := os.OpenFile(join, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	defer file.Close()
 	if err != nil {
 		logrus.Errorf("openfile dir %s not is dir, %s", join, err.Error())
 		panic(err)
@@ -113,6 +114,7 @@ func checkDirExist(chartName string) error {
 func LoadChartVersionsByFile(filepath string) ([]*domain.ChartVersion, error) {
 	versions := make([]*domain.ChartVersion, 0)
 	file, e := os.Open(filepath)
+	defer file.Close()
 	if e != nil && os.IsNotExist(e) {
 		return versions, nil
 	}
@@ -133,6 +135,10 @@ func LoadChartVersionsByFile(filepath string) ([]*domain.ChartVersion, error) {
 func MustLoadChartVersionsByFile(filepath string) []*domain.ChartVersion {
 	versions := make([]*domain.ChartVersion, 0)
 	file, e := os.Open(filepath)
+	defer func() {
+		file.Sync()
+		file.Close()
+	}()
 	if e != nil && os.IsNotExist(e) {
 		return versions
 	}

@@ -6,9 +6,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"repository/domain"
 	"repository/event"
 	"repository/httpserver"
-	"repository/repository/domain"
 )
 
 var chartGauge = prometheus.NewGauge(prometheus.GaugeOpts{

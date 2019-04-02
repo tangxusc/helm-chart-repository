@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/sirupsen/logrus"
 	"repository/config"
+	"repository/domain"
 	"repository/event"
-	"repository/repository/domain"
 	"repository/repository/index"
 	"testing"
 	"time"

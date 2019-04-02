@@ -1,14 +1,15 @@
 package index
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"repository/config"
+	"repository/domain"
 	"repository/event"
-	"repository/repository/domain"
 	"repository/repository/entry"
 	"time"
 )
@@ -20,6 +21,10 @@ func init() {
 		"*domain.ChartCreated": handlerChartCreated,
 		"*domain.ChartDeleted": handlerChartDeleted,
 	}, "index")
+}
+
+func GetCharts() map[string]domain.ChartVersions {
+	return indexFile.Entries
 }
 
 func handlerChartDeleted(evt interface{}) {
@@ -51,8 +56,8 @@ func handlerChartDeleted(evt interface{}) {
 func handlerChartCreated(event interface{}) {
 	created := event.(*domain.ChartCreated)
 	indexFile.Generated = time.Now()
-	//TODO:加上下载前缀
-	created.URLs = []string{created.FileName}
+	url := fmt.Sprintf("%s/chart/%s/%s/download", config.Config.Domain, created.Name, created.Version)
+	created.URLs = []string{url}
 
 	versions, ok := indexFile.Entries[created.Name]
 	if !ok {

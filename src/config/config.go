@@ -19,12 +19,14 @@ var Config = Configuration{
 	ServerPort:    "8080",
 	DataDir:       "data/",
 	EntryFileName: "entry.yaml",
+	Domain:        "http://localhost:8080",
 }
 
 type Configuration struct {
 	ServerPort    string `config:"serverPort"`
 	DataDir       string `config:"dataDir"`
 	EntryFileName string `config:"entryFileName"`
+	Domain        string `config:"domain"`
 }
 
 func LoadConfig() {
