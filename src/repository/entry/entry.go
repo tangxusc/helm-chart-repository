@@ -158,3 +158,19 @@ func MustLoadChartVersionsByFile(filepath string) []*domain.ChartVersion {
 	}
 	return versions
 }
+
+func MustLoadChartVersionByName(chartName string) []*domain.ChartVersion {
+	path := getEntryFilePath(chartName)
+	return MustLoadChartVersionsByFile(path)
+}
+
+func MustLoadChartVersion(chartName, version string) *domain.ChartVersion {
+	path := getEntryFilePath(chartName)
+	versionsByFile := MustLoadChartVersionsByFile(path)
+	for index, value := range versionsByFile {
+		if value.Version == version {
+			return versionsByFile[index]
+		}
+	}
+	return nil
+}

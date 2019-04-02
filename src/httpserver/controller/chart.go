@@ -8,6 +8,7 @@ import (
 	"repository/event"
 	"repository/httpserver"
 	"repository/repository/domain"
+	"repository/repository/entry"
 	"strconv"
 	"time"
 )
@@ -16,7 +17,29 @@ func init() {
 	httpserver.AddRegister(func(app *iris.Application) {
 		app.Post("/chart", createHandler)
 		app.Delete("/chart/{chartName:string}/{version:string}", deleteHandler)
+		app.Get("/chart/{chartName:string}/{version:string}/info", infoHandler)
+		app.Get("/chart/{chartName:string}/{version:string}/download", infoHandler)
+		app.Get("/chart/{chartName:string}/list", listHandler)
 	})
+}
+
+func listHandler(ctx context.Context) {
+	chartName := ctx.Params().Get("chartName")
+
+	_, e := ctx.JSON(entry.MustLoadChartVersionByName(chartName))
+	if e != nil {
+		panic(e)
+	}
+}
+
+func infoHandler(ctx context.Context) {
+	chartName := ctx.Params().Get("chartName")
+	version := ctx.Params().Get("version")
+
+	_, e := ctx.JSON(entry.MustLoadChartVersion(chartName, version))
+	if e != nil {
+		panic(e)
+	}
 }
 
 func deleteHandler(ctx context.Context) {
