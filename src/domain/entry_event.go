@@ -3,7 +3,7 @@ package domain
 import "mime/multipart"
 
 type FileUploaded struct {
-	File        *multipart.File
+	File        multipart.File
 	ChartName   string
 	FileName    string
 	NewFileName string

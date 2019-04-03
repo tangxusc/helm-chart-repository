@@ -70,6 +70,8 @@ func getEntryFilePath(entryName string) string {
 
 func handlerFileUploaded(event interface{}) {
 	uploaded := event.(*domain.FileUploaded)
+	defer uploaded.File.Close()
+
 	err := checkDirExist(uploaded.ChartName)
 	if err != nil {
 		panic(err)
@@ -81,7 +83,7 @@ func handlerFileUploaded(event interface{}) {
 		logrus.Errorf("openfile dir %s not is dir, %s", join, err.Error())
 		panic(err)
 	}
-	_, err = io.Copy(file, *uploaded.File)
+	_, err = io.Copy(file, uploaded.File)
 	if err != nil {
 		logrus.Errorf("chart dir %s not is dir, %s", join, err.Error())
 		panic(err)

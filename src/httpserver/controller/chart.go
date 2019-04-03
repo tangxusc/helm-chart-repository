@@ -1,11 +1,18 @@
 package controller
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/context"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"path/filepath"
+	"regexp"
 	"repository/config"
 	"repository/domain"
 	"repository/event"
@@ -136,20 +143,15 @@ func deleteHandler(ctx context.Context) {
 }
 
 func createHandler(ctx context.Context) {
-	chart := &domain.ChartVersion{}
-	err := ctx.ReadForm(chart)
-	if err != nil {
-		logrus.Errorf("read create chart form error, %s", err.Error())
-		panic(err)
-	}
 	file, header, err := ctx.FormFile("tarFile")
+	chart, err := readTarChartFile(file)
 	if err != nil {
 		logrus.Errorf("read chart file error, %s", err.Error())
 		panic(err)
 	}
 	filename := fmt.Sprintf("%s-%s", chart.Name, chart.Version)
 	event.Send(&domain.FileUploaded{
-		File:        &file,
+		File:        file,
 		ChartName:   chart.Name,
 		FileName:    header.Filename,
 		NewFileName: filename,
@@ -159,4 +161,37 @@ func createHandler(ctx context.Context) {
 		FileName:     filename,
 	})
 	ctx.JSON("success")
+}
+
+func readTarChartFile(file multipart.File) (*domain.ChartVersion, error) {
+	gzReader, e := gzip.NewReader(file)
+	if e != nil {
+		return nil, e
+	}
+	defer gzReader.Close()
+	reader := tar.NewReader(gzReader)
+
+	for {
+		header, e := reader.Next()
+		if e != nil && e == io.EOF {
+			break
+		}
+		if e != nil {
+			return nil, e
+		}
+		reg := regexp.MustCompile("[a-zA-z]*/?Chart.yaml")
+		if reg.MatchString(header.Name) {
+			all, e := ioutil.ReadAll(reader)
+			if e != nil {
+				return nil, e
+			}
+			result := &domain.ChartVersion{}
+			e = yaml.Unmarshal(all, result)
+			if e != nil {
+				return nil, e
+			}
+			return result, nil
+		}
+	}
+	return nil, fmt.Errorf("tar.gz not contain file Chart.yaml")
 }

@@ -7,14 +7,6 @@ POST localhost:8080/chart
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="Name"
-
-test
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="Version"
-
-1.0
-------WebKitFormBoundary7MA4YWxkTrZu0gW
 Content-Disposition: form-data; name="tarFile"; filename="apache-4.1.0.tgz"
 Content-Type: image/png
 
@@ -29,5 +21,8 @@ GET localhost:8080/chart/test/1.0/info
 
 ### list
 GET localhost:8080/chart?pageNum=1
+
+### chart version list
+GET localhost:8080/chart/test/
 
 ###

@@ -1,7 +1,14 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
+	"fmt"
 	"github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
+	"os"
+	"regexp"
 	"repository/config"
 	"repository/domain"
 	"repository/event"
@@ -36,4 +43,48 @@ func TestSend(t *testing.T) {
 	})
 
 	time.Sleep(2 * time.Second)
+}
+
+func TestReadTar(t *testing.T) {
+	file, e := os.Open("testdata/apache-4.1.0.tgz")
+	if e != nil {
+		panic(e.Error())
+	}
+	defer file.Close()
+	gzReader, e := gzip.NewReader(file)
+	if e != nil {
+		panic(e)
+	}
+	defer gzReader.Close()
+	reader := tar.NewReader(gzReader)
+
+	for {
+		header, e := reader.Next()
+		if e != nil && e == io.EOF {
+			break
+		}
+		if e != nil {
+			panic(e)
+		}
+
+		fmt.Println("===============文件名称:", header.Name, "===================")
+		compile, e := regexp.Compile("([a-zA-Z]*)/?Chart.yaml")
+		if e != nil {
+			panic(e)
+		}
+		matchString := compile.MatchString(header.Name)
+		fmt.Println(header.Name, matchString)
+		allString := compile.FindStringSubmatch(header.Name)
+		fmt.Println(allString, "================")
+		if matchString {
+			bytes, e := ioutil.ReadAll(reader)
+			if e != nil {
+				panic(e)
+			}
+			fmt.Println("==============", header.Name, ",内容===========")
+			fmt.Println(string(bytes))
+		}
+
+	}
+
 }
