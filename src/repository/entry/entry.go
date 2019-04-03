@@ -83,6 +83,11 @@ func handlerFileUploaded(event interface{}) {
 		logrus.Errorf("openfile dir %s not is dir, %s", join, err.Error())
 		panic(err)
 	}
+	_, err = uploaded.File.Seek(0, 0)
+	if err != nil {
+		logrus.Errorf("seek chart file error, %s", err.Error())
+		panic(err)
+	}
 	_, err = io.Copy(file, uploaded.File)
 	if err != nil {
 		logrus.Errorf("chart dir %s not is dir, %s", join, err.Error())

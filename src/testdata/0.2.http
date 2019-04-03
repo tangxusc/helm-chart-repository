@@ -14,15 +14,15 @@ Content-Type: image/png
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 ### 下载
-GET localhost:8080/chart/test/1.0/download
+GET localhost:8080/chart/apache/4.1.0/download
 
 ### info
-GET localhost:8080/chart/test/1.0/info
+GET localhost:8080/chart/apache/4.1.0/info
 
 ### list
 GET localhost:8080/chart?pageNum=1
 
 ### chart version list
-GET localhost:8080/chart/test/
+GET localhost:8080/chart/apache/
 
 ###
